@@ -1,0 +1,120 @@
+---
+title: "kNN Assignment David - Koen"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+library(tidyverse)
+library(magrittr)
+install.packages("class")
+library(class)
+install.packages("caret")
+library(caret)
+library(dplyr)
+```
+
+**Business Understanding and Data Understanding**
+
+```{r}
+url <- "https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/KNN-occupancy.csv"
+rawdf <- read_csv(url)
+```
+
+```{r}
+str(rawdf)
+```
+
+**Data Preparation**
+
+```{r}
+cleandf <- rawdf[-1] # Remove irrelevant data (date)
+head(cleandf)
+```
+
+```{r}
+cntDiag <- table(cleandf$Occupancy) # "Occupancy" is the variable that needs to be tested
+propDiag <- round(prop.table(cntDiag)*100,digits=1)
+cntDiag
+```
+
+```{r}
+propDiag # 0 = Not occupied, 1 = Occupied, percentages shown below
+```
+
+```{r}
+cleandf$Occupancy <- factor(cleandf$Occupancy,levels=c("0","1"),labels=c("Not occupied","Occupied")) %>% relevel("Occupied") # The variable is now a factor datatype instead of a character datatype
+head(cleandf,10)
+```
+
+```{r}
+summary(cleandf[c("Temperature","Humidity","Light","CO2")]) 
+```
+
+```{r}
+normalize <- function(x) { 
+  return ((x-min(x,na.rm=TRUE))/(max(x,na.rm=TRUE)-min(x,na.rm=TRUE)))
+} # Distance of item value - minimum vector value / range of total vector values 
+```
+
+```{r}
+cleandf <- cleandf[, c(6,1,2,3,4,5)] # Show Occupancy as first column
+head(cleandf)
+```
+
+```{r}
+testSet1 <- c(1:5) 
+testSet2 <- c(1:5)*10
+
+cat("testSet1:", testSet1, "\n")
+```
+
+```{r}
+cat("testSet2:", testSet2, "\n")
+```
+
+```{r}
+cat("Normalized testSet1:", normalize(testSet1), "\n")
+```
+
+```{r}
+cat("Normalized testSet2:", normalize(testSet2))
+```
+
+```{r}
+nCols <- dim(cleandf)[2]
+cleandf_n <- cleandf[,c(2:nCols)] %>% mutate(across(everything(), normalize))
+
+summary(cleandf_n)
+```
+
+```{r}
+summary(cleandf)
+```
+
+```{r}
+traindf_feat <- cleandf_n[1:4071,  ]
+testdf_feat <- cleandf_n[4072:8143,  ]
+```
+
+```{r}
+traindf_labels <- cleandf[1:4071,  1]
+testdf_labels <- cleandf[4072:8143,  1]
+```
+
+    [4072:8143,  ]
+
+**Modeling**
+
+```{r}
+cleandf_test_pred <- knn(train = as.matrix(traindf_feat), test = as.matrix(testdf_feat), cl = as.matrix(traindf_labels), k = 21)
+head(cleandf_test_pred)
+```
+
+**Evaluation**
+
+```{r}
+confusionMatrix(cleandf_test_pred, testdf_labels[[1]], positive = NULL, dnn = c("Prediction", "True"))
+```
