@@ -1,0 +1,325 @@
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(moments)
+library(Rfast)
+library(lmPerm)
+#Installing the packages needed for this project
+```
+
+#Creating the random course scores
+```{r}
+Course_1 <- runif(11, min=2, max = 10)
+Course_2 <- runif(11, min=6, max = 10)
+Course_3 <- runif(11, min=4, max = 10)
+Course_4 <- runif(11, min=0, max = 10)
+Course_5 <- runif(11, min=4, max = 8)
+Course_6 <- runif(11, min=8, max = 10)
+
+#Here we created the random number generator for the course grades with the correct parameters. We used runif to generate the numbers and added a max and min to the code so that we got the required range.
+
+Students <- c("a","b","c","d","e","f","g","h","i","j","k")
+
+#Add the Students to the data frame since this is an important column for our graphs
+  
+Grades <- data.frame(Students, Course_1, Course_2, Course_3, Course_4, Course_5, Course_6)
+view(Grades)
+
+Grades$Mean<- rowMeans(Grades[2:7])
+Grades$Std_dev <- apply(Grades[2:7],1 , sd)
+Grades$Skew <- apply(Grades[2:7],1 , skewness)
+Grades$Kurt <- apply(Grades[2:7],1 , kurtosis)
+view(Grades)
+
+#After having created the data frame we had to add the Mean, std dev, skewness and kurtosis. This was done using the apply function with the correct range in the data frame and the corresponding function.
+```
+
+#Creating a dataframe for the Course characteristics 
+```{r}
+Mean <- colMeans(Grades[2:7])
+Std <- sapply(Grades[2:7], sd)
+Skewness <- sapply(Grades[2:7], skewness)
+Kurtosis <- sapply(Grades[2:7], kurtosis)
+
+Course <- c("1","2","3","4","5","6")
+
+Courses <- data.frame(Course, Mean, Std, Skewness, Kurtosis)
+view(Courses)
+
+#In order to create the data frame for the courses, which was also important in creating the graphs, we had to calculate the characteristics by column so our codes were slightly different but in essence still the same as done with the previous data frame.
+```
+
+#Creating mean of means
+```{r}
+Mean_mean <- data.frame(colMeans(Grades[8:11]))
+Mean_mean <- rename(Mean_mean, Mean_of_means=colMeans.Grades.8.11.. )
+view(Mean_mean)
+
+#Here we had to create a single column data frame for the mean of means, this was done with the help of the colMeans function. We then decided to rename the column since the name that was originally generated caused some confusion. 
+```
+
+#Creating Total
+```{r}
+df_numeric <- Grades[ , c(2:7)]
+Mean_total <- mean(as.matrix(df_numeric))
+Sd_total <- sd(as.matrix(df_numeric))
+Skewness_total <- mean(skewness(skewness(as.matrix(df_numeric))))
+Kurt_total <- mean(kurtosis(df_numeric, na.rm=FALSE))
+
+Total_df <- data.frame(Mean_total,Sd_total,Skewness_total,Kurt_total)
+view(Total_df)
+
+#When creating the Total data frame we had to calculate everything based on all the grades so creating a matrix for this was the best way. The objects were than added to a data frame which resulted in Total_df
+```
+
+#Creating the data for the histogram for overall distribution of marks
+```{r}
+Bin_number <- c(0,1,2,3,4,5,6,7,8,9,10)
+
+  Cumulative_0 <- sum(Grades[2:7]<0)
+  Cumulative_1 <- sum(Grades[2:7]<1)
+  Cumulative_2 <- sum(Grades[2:7]<2)
+  Cumulative_3 <- sum(Grades[2:7]<3)
+  Cumulative_4 <- sum(Grades[2:7]<4)
+  Cumulative_5 <- sum(Grades[2:7]<5)
+  Cumulative_6 <- sum(Grades[2:7]<6)
+  Cumulative_7 <- sum(Grades[2:7]<7)
+  Cumulative_8 <- sum(Grades[2:7]<8)
+  Cumulative_9 <- sum(Grades[2:7]<9)
+  Cumulative_10 <- sum(Grades[2:7]<10)
+
+Cumulative_number <- c(Cumulative_0, Cumulative_1, Cumulative_2, Cumulative_3, Cumulative_4, Cumulative_5, Cumulative_6, Cumulative_7, Cumulative_8, Cumulative_9, Cumulative_10)
+    
+Frequency_number <- c(0, 
+                      (Cumulative_1-Cumulative_0), 
+                      (Cumulative_2-Cumulative_1), 
+                      (Cumulative_3-Cumulative_2), 
+                      (Cumulative_4-Cumulative_3),
+                      (Cumulative_5-Cumulative_4),
+                      (Cumulative_6-Cumulative_5),
+                      (Cumulative_7-Cumulative_6),
+                      (Cumulative_8-Cumulative_7),
+                      (Cumulative_9-Cumulative_8),
+                      (Cumulative_10-Cumulative_9)
+                      )
+Histogram_number <- data.frame(Bin_number, Cumulative_number, Frequency_number)
+view(Histogram_number)
+
+#Creating the table for the histograms proved to be a lot of work as we didnt know a short way to do this. We calculated the cumulative value for each Bin row separately using the sum function. We came to the conclusion that this took a lot of work and resulted in a very long formula but we simply did not know a shorter way. However, the code works perfectly fine and that is what matters. Simple maths was applied to make this code working.
+```
+
+#Creating the data for the histogram for overall percentage
+```{r}
+Bin_percentage <- c(0,1,2,3,4,5,6,7,8,9,10)
+
+  Cumulative_0p <- (sum(Grades[2:7]<0)/66*100)
+  Cumulative_1p <- (sum(Grades[2:7]<1)/66*100)
+  Cumulative_2p <- (sum(Grades[2:7]<2)/66*100)
+  Cumulative_3p <- (sum(Grades[2:7]<3)/66*100)
+  Cumulative_4p <- (sum(Grades[2:7]<4)/66*100)
+  Cumulative_5p <- (sum(Grades[2:7]<5)/66*100)
+  Cumulative_6p <- (sum(Grades[2:7]<6)/66*100)
+  Cumulative_7p <- (sum(Grades[2:7]<7)/66*100)
+  Cumulative_8p <- (sum(Grades[2:7]<8)/66*100)
+  Cumulative_9p <- (sum(Grades[2:7]<9)/66*100)
+  Cumulative_10p <- (sum(Grades[2:7]<10)/66*100)
+
+Cumulative_percentage <- c(Cumulative_0p, Cumulative_1p, Cumulative_2p, Cumulative_3p, Cumulative_4p, 
+                       Cumulative_5p, Cumulative_6p, Cumulative_7p, Cumulative_8p, Cumulative_9p, Cumulative_10p)
+    
+Frequency_percentage <- c(0, 
+                      (Cumulative_1p-Cumulative_0p), 
+                      (Cumulative_2p-Cumulative_1p), 
+                      (Cumulative_3p-Cumulative_2p), 
+                      (Cumulative_4p-Cumulative_3p),
+                      (Cumulative_5p-Cumulative_4p),
+                      (Cumulative_6p-Cumulative_5p),
+                      (Cumulative_7p-Cumulative_6p),
+                      (Cumulative_8p-Cumulative_7p),
+                      (Cumulative_9p-Cumulative_8p),
+                      (Cumulative_10p-Cumulative_9p)
+                      )
+Histogram_percentage <- data.frame(Bin_percentage, Cumulative_percentage, Frequency_percentage)
+Histogram_percentage <- round(Histogram_percentage, digits = 1)
+view(Histogram_percentage)
+
+#Creating the table for the histograms proved to be a lot of work as we didnt know a short way to do this. We calculated the cumulative value for each Bin row separately using the sum function. We came to the conclusion that this took a lot of work and resulted in a very long formula but we simply did not know a shorter way. However, the code works perfectly fine and that is what matters. Simple maths was applied to make this code working. Worked like a charm.
+```
+
+#Histogram for Overall Distribution of Marks
+```{r}
+ggplot((Histogram_number), aes(x=Bin_number)) + 
+  
+  geom_bar(aes(y=Frequency_number), stat="identity", size=.01, color="black", alpha=1, width=.5) + #The graphs characteristics were edited in such a manner that we thought looked best
+  
+  geom_line(aes(y=Cumulative_number/5.5), size=1, color="red") + 
+  scale_x_continuous(breaks=c(seq(+0, +10, 1))) +
+  scale_y_continuous(breaks=c(seq(+0, +20, 2)), 
+                     name="Frequency", sec.axis = sec_axis(~.*5.5, name="Cumulative")) +
+  ggtitle("Overall Distribution of Marks") +
+  
+  #Rename the x and y axis and the title to make the graph understandable (this goes for all graphs)
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(), axis.line = element_line(colour = "black")) #Removing background and grid lines to make the graph more attractive (The same goes for all the other graphs)
+```
+
+#Histogram for Overall Distribution of Marks in %
+```{r}
+ggplot((Histogram_percentage), aes(x=Bin_percentage)) + 
+            
+  geom_bar(aes(y=Frequency_percentage), stat="identity", size=.01, color="black", alpha=1, width=.5) +
+  geom_line(aes(y=Cumulative_percentage/5.5), size=1, color="red") + 
+  scale_x_continuous(breaks=c(seq(+0, +10, 1))) +
+  scale_y_continuous(breaks=c(seq(+0, +30, 2)), 
+                       name="Frequency", sec.axis = sec_axis(~.*3.5, name="Cumulative")) + 
+  ggtitle("Overall Distribution of Marks (in %)") +
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+  panel.background = element_blank(), axis.line = element_line(colour = "black")) #removing background and gridlines
+
+```
+
+#Line graph mean grades by Student
+```{r}
+ggplot(Grades, aes(Students, Mean)) + geom_line(size=1, group=1, color ="red") + 
+ylim(0,10) +
+  
+  geom_hline(yintercept = mean(Grades$Mean), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph standard deviation of grades by Student
+```{r}
+ggplot(Grades, aes(Students, Std_dev)) + geom_line(size=1, group=1, color ="red") + 
+ylim(0,5) +
+  
+  geom_hline(yintercept = mean(Grades$Std_dev), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph skeweness of grades by Student
+```{r}
+ggplot(Grades, aes(Students, Skew)) + geom_line(size=1, group=1, color ="red") + 
+ylim(-2,1) +
+  
+  geom_hline(yintercept = mean(Grades$Skew), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph kurtosis of grades by Student
+```{r}
+ggplot(Grades, aes(Students, Kurt)) + geom_line(size=1, group=1, color ="red") + 
+ylim(0,5) +
+  
+  geom_hline(yintercept = mean(Grades$Kurt), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph mean grades by Course
+```{r}
+ggplot(Courses, aes(Course, Mean)) + geom_line(size=1, group=1, color ="red") + 
+ylim(0,10) +
+  
+  geom_hline(yintercept = mean(Courses$Mean), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph standard deviation of grades by Course
+```{r}
+ggplot(Courses, aes(Course, Std)) + geom_line(size=1, group=1, color ="red") + 
+ylim(0,5) +
+  
+  geom_hline(yintercept = mean(Courses$Std), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph skewness of grades by Course
+```{r}
+ggplot(Courses, aes(Course, Skewness)) + geom_line(size=1, group=1, color ="red") + 
+ylim(-4,4) +
+  
+  geom_hline(yintercept = mean(Courses$Skewness), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+#Line graph kurtosis of grades by Course
+```{r}
+ggplot(Courses, aes(Course, Kurtosis)) + geom_line(size=1, group=1, color ="red") + 
+ylim(0,4) +
+  
+  geom_hline(yintercept = mean(Courses$Kurtosis), lty="dashed") + 
+  
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+
+
+#Hypotheses testing
+
+#Hypothesis 1: The observed differences of the course grades were caused by randomness.
+
+#Hypothesis 2: There is a chance that all students could end up with the same grades.
+
+#Transpose
+```{r}
+Transposed_grades <-t(Grades[2:7])
+colnames(Transposed_grades) <- c("a","b","c","d","e","f","g","h","i","j","k")
+round(Transposed_grades, digits=2)
+
+#Transposing the data to make it easier to create the boxplots and to have a better overview in a table.
+```
+
+
+#Boxplots of the grades by student
+```{r}
+boxplot(Transposed_grades, use.cols=TRUE)
+
+#As we can see the mean of all the grades per student are roughly in the same area with a few outliers here and there. This was to be expected since every student had the same random parameters per course so hypothetically speaking all students could have the exact same grades.
+```
+
+#Boxplots of the grades by course
+```{r}
+boxplot(Grades[2:7], use.cols = TRUE)
+#When we create a boxplot with the courses as our x-axis, we notice that there is no correlation between the courses whatsoever and that the variance for course 4 is the biggest which makes sense because the range of the random number generated was the largest for course 4 and the smallest for course 6 which is why we barely see any variance in course 6.
+```
+
+#Student means and variances
+```{r}
+Mean_student <- colMeans(data.frame(Transposed_grades[sapply(Transposed_grades, is.numeric)]))
+Variance_student <- colVars(as.matrix(Transposed_grades[sapply(Transposed_grades, is.numeric)]))
+Mean_student
+Variance_student 
+#Comparing the mean to the variance
+```
+
+#Course means and variances
+```{r}
+Means_courses <- colMeans(data.frame(Grades[1:7][sapply(Grades[1:7], is.numeric)]))
+Variance_courses <- colVars(as.matrix(Grades[1:7][sapply(Grades[1:7], is.numeric)]))
+
+round(Means_courses, digits=2)
+round(Variance_courses, digits=2) 
+#Round the mean and variance to get a clear instant overview of the data we just created.
+```
+
+#Hypothesis 2 stated that all students could theoratically end up with the same grades. We accept this hypothesis because the grades that belong to these courses all have the same parameters. So theoratically speaking, all students could end up having the same grades.
+
+# Permutation for the course grades
+```{r}
+Permutation_grades <- (aovp(Course_1~Course_2, data=Grades)) #Calculating permutations
+summary(Permutation_grades)
+
+#The p is bigger than 5%, meaning that differences between variances and means is not statistically significant, 
+```
+
+#We accept Hypothesis 1 because the p value is 35%, which is higher than 5%.
+#This is because for the courses, there is a minimum and maximum grade that a student can get. This minimum and maximum varies per course.
+
+
