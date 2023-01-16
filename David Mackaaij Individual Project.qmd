@@ -1,0 +1,230 @@
+#Opening libraries
+```{r}
+library(tidyverse)
+library(GGally)
+library(ggcorrplot)
+library(car)
+library(texreg)
+```
+
+#Importing dataset
+```{r}
+df <- read.csv("/Users/davidmackaaij/Downloads/insurance 2.csv")
+```
+
+#Summarizing data
+```{r}
+summary(df)
+#The age of participants is between 18 and 64
+```
+
+#Summarizing the response variable in particular (charges)
+```{r}
+summary(df$charges)
+sd(df$charges)
+```
+
+#Checking datatypes
+```{r}
+str(df)
+```
+
+#Finding more about the data
+```{r}
+df$sex %>% table() #the genders of the participants seem to be almost 50/50
+df$smoker %>% table()
+df$children %>% table()
+```
+
+#Checking for n/a values
+```{r}
+any(is.na(df)) #no missing values
+```
+
+#Making a new column: obese (BMI of 30 or higher)
+```{r}
+df$obese <- 0
+df$obese <- ifelse(df$bmi > 30, 1, 0) #0=not obese, 1=obese
+```
+
+
+#Visualizing the distribution between male and female
+```{r}
+ggplot(df, aes(x=sex)) +
+  geom_bar(aes(fill=sex), stat = 'count', 
+           color = 'white',
+           show.legend = T) +
+  scale_fill_manual(values = c('pink', 'blue')) +
+  labs(title="Count of Males and Females", x="Gender", y="Count")
+```
+
+#Checking distribution of the response variable
+```{r}
+ggplot(data=df, aes(x=charges)) + 
+  geom_histogram(binwidth = 1000, color = "black", fill = "darkgrey") +
+  ggtitle("Distribution of Charges") +
+  xlab("Charges") +
+  ylab("Frequency")
+
+#The distribution is right skewed, which was expected 
+```
+
+#Comparing region to charges using boxplots
+```{r}
+ggplot(data=df, aes(x=region, y=charges)) + 
+  geom_boxplot(aes(color=region)) +
+  scale_color_manual(values = c("blue", "darkgreen", "red", "orange")) +
+  ggtitle("Charges by Region") +
+  xlab("Region") +
+  ylab("Charges")
+
+#No significant differences, all regions are right skewed as expected
+```
+#Visualizing the relationship for charges between smokers and non-smokers
+```{r}
+ggplot(data=df, aes(x=smoker, y=charges)) + 
+  geom_boxplot(aes(color=smoker)) +
+  scale_color_manual(values = c("darkgreen", "black")) +
+  ggtitle("Charges by Smoker Status") +
+  xlab("Smoker") +
+  ylab("Charges")
+```
+
+#Applying ggpairs
+```{r}
+ggpairs(df, ggplot2::aes(colour = sex)) + 
+  scale_colour_manual(values = c("female" = "pink", "male" = "blue"))
+```
+
+#There seems to be correlation between age and charges, I will visualize the relationship between age and charges
+```{r}
+ggplot(data = df, aes(x = age, y = charges)) + 
+  geom_point()
+```
+
+#Visualizing the relationship between age and charges for male and female
+```{r}
+ggplot(df, aes(x = age, y = charges, color = sex)) + 
+  geom_point() + 
+  scale_color_manual(values = c("female" = "pink", "male" = "blue")) +
+  ggtitle("Relationship between Age and Charges by Gender") + 
+  xlab("Age") + 
+  ylab("Charges")
+```
+
+#Making dummy variables 
+```{r}
+df <- df %>% mutate(smoker_dummy = ifelse(smoker == "no", 0, 1))
+df <- df %>% mutate(sex_dummy = ifelse(sex == "female", 0, 1))
+```
+
+#Removing the smoker column with character type data
+```{r}
+df <- df %>% select(-smoker, -sex)
+```
+
+#Checking correlation
+```{r}
+df_cor <- as.matrix(round(cor(df[-4]),2)) #rounding two digits so the data is easier to read
+df_cor
+```
+
+#Making it easier to read by making a correlation plot
+```{r}
+ggcorrplot(df_cor, 
+           hc.order = TRUE, 
+           type = "lower",
+           lab = TRUE,
+           lab_size = 4,
+           insig = "blank", #remove insignificant correlations
+           colors = c("black","white","red"),)
+```
+
+##Modelling
+
+#Splitting the data into train and test data 
+```{r}
+set.seed(123) #setting seed for reproductibility
+train_ind <- sample(1:nrow(df), 0.8 * nrow(df)) #sample 80% of the data for training and create a boolean index for it
+train_df <- df[train_ind, ] #subset of the original data with rows marked as TRUE in the index
+test_df <- df[-train_ind, ] #subset of the original data with rows marked as FALSE in the index
+```
+
+#Check the size of the train and test data
+```{r}
+dim(train_df)
+dim(test_df)
+```
+
+
+#Building linear model
+```{r}
+lmodel <- lm(formula=charges~age+bmi+children+region+smoker_dummy+sex_dummy,data=train_df)
+summary(lmodel)
+plot(lmodel)
+
+#The R-squared is 0.7533, meaning 0.75 of the variation in charges could be explained by the independent variables
+#The sex_dummy variable shows a p value of 0.57, which is larger than 0.05, meaning that there is no strong evidence for saying that this predictor is associated with the response variable. The regions also all have a p value higher than 0.05.
+```
+
+#Building new linear model
+```{r}
+lmodelnew <- lm(formula=charges~age+bmi+children+smoker_dummy,data=train_df)
+summary(lmodelnew)
+plot(lmodelnew)
+#The R-squared is 0.7523
+```
+
+#Using the ANOVA test to compare the two models
+```{r}
+anova(lmodel,lmodelnew)
+#No significant difference between the two models, so I will use the new, more simple model which uses 4 predictor values instead 6. 
+```
+
+##Evaluating model    
+
+#Checking how the model fits the test data
+```{r}
+test_df$predict <- predict(lmodelnew, newdata=test_df)
+test_df %>%
+  ggplot() +
+  geom_point(aes(x=predict, y=charges)) +
+  geom_abline(color = "green")
+```
+
+#Predicting my charges
+```{r}
+predict21 <- data.frame(age=21, 
+                       bmi=23, 
+                       children=0, 
+                       smoker_dummy=0)
+predict(lmodelnew,predict21)
+```
+
+#Predicting my charges in 20 years
+```{r}
+predict41 <- data.frame(age=41, 
+                       bmi=31, 
+                       children=5, 
+                       smoker_dummy=1)
+predict(lmodelnew,predict41)
+```
+
+#Predicting random charges
+```{r}
+predict49 <- data.frame(age=49,
+                        bmi=25,
+                        children=3,
+                        smoker_dummy=0)
+predict(lmodelnew,predict49)
+```
+
+#Texreg
+```{r}
+wordreg(
+  list(lmodel,lmodelnew),
+  file = "ModelTexreg.doc",
+  
+)
+```
+
